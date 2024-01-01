@@ -13,7 +13,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "cell_list.h"
+#include "cell_list.h" // implementation of cell neighbors
+#include "ran3.c"      // ran3() from Numerical Recipes in C
 
 int main(int argc, char *argv[]) {
 
