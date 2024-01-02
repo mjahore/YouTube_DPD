@@ -203,7 +203,7 @@ void calc_forces (void) {
 			fz[idx_j] -= f_comp;
 		}
 	}
-
+	
 	// Now we process *all* particles in the system to compute the three
 	// DPD forces. Since all forces are pair-wise we really only need to
 	// examine 1/2 of the particles in the system. 
@@ -319,6 +319,7 @@ void calc_forces (void) {
 							idx_j = cell_list[idx_j];
 						} // end while (idx_j > -1)
 					} // end for l = [0, 14);		
+					idx_i = cell_list[idx_i];
 				} // end while (idx_i > -1)
 			} // end for i
 		} // end for j
@@ -703,6 +704,7 @@ void velocity_verlet(double lambda) {
 	calc_forces();
 
 	// Correct velocities and calculate kinetic energy
+	K = 0.0;
 	for (i=0; i<n_dpd; i++) {
 		vx[i] = vxp[i] + 0.5*dt*(fx[i]+fxp[i]);
 		vy[i] = vyp[i] + 0.5*dt*(fy[i]+fyp[i]);
