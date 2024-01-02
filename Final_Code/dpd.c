@@ -117,9 +117,13 @@ int main(int argc, char *argv[]) {
 // the three DPD forces for all particles that are within a distance r_{c}.
 //
 void calc_forces (void) {
-	int i, j, k, idx;
+	int i, j, k, l, idx_i, idx_j;
+	int ni, nj, nk;
+	int cell0, cell1;
 	double dx, dy, dz, dr;
-
+	double x_trans, y_trans, z_trans;
+	double f_net, f_comp;
+	
 	// Initialize the forces.
 	memset(fx, 0.0, n_dpd*sizeof(double));
 	memset(fy, 0.0, n_dpd*sizeof(double));
@@ -127,10 +131,109 @@ void calc_forces (void) {
 
 	// Apply the harmonic force between all adjacent monomers.
 	for (i=0; i<n_poly; i++) {
+		// j < N-1 is due to the fact that the last monomer has no adjacent monomer in the
+		// forward direction!
 		for (j=0; j<N-1; j++) {
 			idx = i*N+j;
+		
+			// How far apart are the adjacent monomers?
+			dx = x[idx] - x[idx+1];
+			dy = y[idx] - y[idx+1];
+			dz = z[idx] - z[idx+1];
+			dr = sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
 
-			d
+			// Harmonic potential has no cutoff, so regardless of
+			// the value of dr, we compute the force.
+			// U = 1/2 * kH * (dr - b)^2.
+			// The b/dr term comes from pre-computing part of the projection
+			// of f_net into the 3 directions. 
+			f_net = -kH * (1.0 - b/dr); 
+
+			// Do each component of the force. Newton's 3rd law!
+			f_comp     = f_net*dx;
+			fx[idx]   += f_comp;
+			fx[idx+1] -= f_comp;
+
+			f_comp     = f_net*dy;
+			fy[idx]   += f_comp;
+			fy[idx+1] -= f_comp;
+
+			f_comp     = f_net*dz;
+			fz[idx]   += f_comp;
+			fz[idx+1] -= f_comp;
+		}
+	}
+
+	// Now we process *all* particles in the system to compute the three
+	// DPD forces. Since all forces are pair-wise we really only need to
+	// examine 1/2 of the particles in the system. 
+	for(k=0; i<nz; i++) {
+		for(j=0; j<ny; j++) {
+			for(i=0; i<nx; i++) {
+				// Calculate this cell's index.
+				cell0 = i + j*nx + k*nx*ny;
+	
+				// Who is in this cell?
+				idx_i = cell_head[cell0];
+				
+				// If the cell is not empty, proceed:
+				if (idx_i > -1) {
+					// Loop through the 14 cells we need to examine.
+					for(l=0; l<14; l++) {
+						// Compute the index of the cell we're looking at.
+						ni = i + nix[l];
+						nj = j + niy[l];
+						nk = k + niz[l];	
+
+						// If we're on a boundary, we need to change our
+						// indices to account for the PBC.
+						if (ni > nx-1) {
+							ni      = 0;
+					       		x_trans = -Lx;
+					 	} else if (ni < 0) {
+							ni      = nx-1;
+							x_trans = Lx;
+						}	
+
+						if (nj > ny-1) {
+							nj      = 0;
+					       		y_trans = -Ly;
+					 	} else if (nj < 0) {
+							nj      = ny-1;
+							y_trans = Ly;
+						}	
+
+						if (nk > nz-1) {
+							nk      = 0;
+					       		z_trans = -Lz;
+					 	} else if (nk < 0) {
+							nk      = nz-1;
+							z_trans = Lz;
+						}		
+
+						cell1 = ni + nj*nx + nk*nx*ny;
+
+						// Get the top of our neighboring cell.
+						idx_j = cell_head[cell1];
+
+						// Process the entire cell until we reach the bottom!
+						while (idx_j > -1) {
+							dx = x[idx_i] - x[idx_j] + x_trans;
+							dy = y[idx_i] - y[idx_j] + y_trans;
+							dz = z[idx_i] - z[idx_j] + z_trans;
+
+							dr = sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
+
+							// If the particles are closer than dr = r_{c}, calculate
+							// the forces.
+							if (dr < 1.0) {
+
+							}
+						}
+					}		
+
+				}
+			}
 		}
 	}
 
@@ -194,7 +297,8 @@ void initialize_system(void) {
 
 		// vx^2 + vy^2a + vz^2 = kBT, so... pick a random direction and
 		// give the particle a velocity with a magnitude of T. Theta and
-		// phi are two random angles in spherical coordinates (i.e., the 		// polar and azimuthal angles).
+		// phi are two random angles in spherical coordinates (i.e., the 		
+		// azimuthal and polar angles).
 		theta = ran3(&iseed) * PI;
 		phi   = ran3(&iseed) * 2.0 * PI;
 		vx[k] = sqrt(T) * cos(phi) * sin(theta);
