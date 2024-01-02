@@ -1,4 +1,6 @@
 // Allocate these arrays in the main code.
+#define CELL_SIZE 1.0f
+int nx, ny, nz, n_cell;
 int *cell_head, *cell_list;
 
 // These are the indices used to calculate the locations of all 
