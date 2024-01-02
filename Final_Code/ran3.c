@@ -1,3 +1,4 @@
+#define __RAN3__
 #define MBIG 1000000000
 #define MSEED 161803398
 #define MZ 0
@@ -38,8 +39,3 @@ float ran3(int *idum)
 	return mj*FAC;
 }
 
-#undef MBIG
-#undef MSEED
-#undef MZ
-#undef FAC
-#define __RAN3__
