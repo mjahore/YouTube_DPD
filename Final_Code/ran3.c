@@ -1,3 +1,9 @@
+/*
+ * ran3.c - This is the ran3() function as presented in Numerical Recipes in C. It is sufficient
+ *          for DPD simulation in terms of an extremely long period for the RNG. idum is the seed
+ *          and should be set initially to a large, negative integer. ran3() returns a random number
+ *          between 0 and 1 from a uniform distribution. 
+ */
 #define __RAN3__
 #define MBIG 1000000000
 #define MSEED 161803398
