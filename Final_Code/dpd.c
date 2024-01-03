@@ -424,13 +424,14 @@ double calc_T(void) {
 	deg_freedm = 3 * n_dpd - 3;
 
 	// This is the explicit calculation.
+	/*
 	for (i=0; i<n_dpd; i++) {
 		kBT += pow(vx[i],2) + pow(vy[i],2) + pow(vz[i],2);
 	}
 	kBT /= deg_freedm;
-
+	*/
 	// This is how you'd calculate it directly from the kinetic energy.
-	// kBT = 2.0 * K / deg_freedm;
+	 kBT = 2.0 * K / deg_freedm;
 	return kBT;
 }
 
