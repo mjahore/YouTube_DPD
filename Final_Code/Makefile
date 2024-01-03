@@ -1,5 +1,5 @@
 all:
-	gcc -g -o dpd dpd.c -lm 
+	gcc -o dpd dpd.c -lm 
 
 clean:
-	rm -f *.o *.dat dpd
+	rm -f *.o *.dat *.xyz dpd 

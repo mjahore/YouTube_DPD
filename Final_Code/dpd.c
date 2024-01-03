@@ -29,6 +29,7 @@ double rho;              // Fluid density
 double poly_phi;         // Polymer volume fraction
 int    N;                // Polymer deg. of polymerization
 double b;                // Polymer bond length
+double b_avg;            // Average bond length (from simulation)
 double T;                // Temperature (actually, kB*T)
 double U;                // Total system potential energy.
 double K;                // Total system kinetic energy.
@@ -53,7 +54,8 @@ int iseed;             // Random seed
 #include "cell_list.h" // Cell list for finding interacting pairs
 
 #define PI 3.1415926535897932384626433832795f
-#define OUTPUT_FREQ 1
+#define CALC_FREQ 10
+#define XYZ_FREQ  100
 
 // Function prototypes:
 void   calc_forces(void);
@@ -64,10 +66,11 @@ void   initialize_system(void);
 void   make_list(void);
 void   read_parameters(char *filename);
 void   velocity_verlet(double lambda);
-void   write_xyz(char *filename);
+void   write_xyz(char *filename, int append);
 
 int main(int argc, char *argv[]) {
 	FILE *output;
+	double kBT_temp;
 
 	// Cosmetic stuff.
 	printf("\n");
@@ -79,13 +82,13 @@ int main(int argc, char *argv[]) {
 	read_parameters("param.cfg");
 
 	// Just some info to make sure things are okay...
-	printf("Simulating a %lf x %lf x %lf system with density p = %lf.\n", Lx, Ly, Lz, rho);
+	printf("Simulating a %lf x %lf x %lf system with density rho = %lf.\n", Lx, Ly, Lz, rho);
 
 	// Set up the initial configuration of the system
 	initialize_system();
 
 	// Write out our initial configuration:
-	write_xyz("initial.xyz");
+	write_xyz("initial.xyz", 0);
 
 	// Calculate the initial forces before entering the main loop
 	// of the simulation.
@@ -93,12 +96,19 @@ int main(int argc, char *argv[]) {
 	calc_forces();
 
 	// Equilibrate the system.
+	output = fopen("dpd_data.dat", "w");
+	fprintf(output, "# timestep\t kBT\t p\t U\t K\t b_avg\t Rg\n");
+	fclose(output);
 	for(t=0; t<time_equil; t++) {
 		velocity_verlet(0.5);
 
 		// Output to disk at regular intervals.
-		if (t % OUTPUT_FREQ == 0) {
-			printf("(%d) kBT = %1.5lf\t p = %1.5lf\t U = %1.5lf\t K = %1.5lf\n", t, T, calc_p(), U, K); 
+		if (t % CALC_FREQ == 0) {
+			kBT_temp = calc_T();
+			printf("(%d) kBT = %1.5lf\t p = %lf\t U = %1.5lf\t K = %1.5lf\t Rg: %1.5lf\n", t, kBT_temp, calc_p(), U, K, calc_Rg()); 
+			output = fopen("dpd_data.dat", "aw");
+			fprintf(output, "%d   %lf   %lf   %lf   %lf   %lf   %lf\n", t, kBT_temp, calc_p(), U, K, b_avg, calc_Rg());
+			fclose(output);
 		}
 	}
 
@@ -107,13 +117,21 @@ int main(int argc, char *argv[]) {
 		velocity_verlet(0.5);
 
 		// Output to disk at regular intervals.
-		if (t % OUTPUT_FREQ == 0) {
-			printf("(%d) kBT = %1.5lf\t p = %1.5lf\t U = %1.5lf\t K = %1.5lf\n", t, T, calc_p(), U, K); 
+		if (t % CALC_FREQ == 0) {
+			kBT_temp = calc_T();
+			printf("(%d) kBT = %1.5lf\t p = %lf\t U = %1.5lf\t K = %1.5lf\t Rg: %1.5lf\n", t, kBT_temp, calc_p(), U, K, calc_Rg()); 
+			output = fopen("dpd_data.dat", "aw");
+			fprintf(output, "%d   %lf   %lf   %lf   %lf   %lf   %lf\n", t, kBT_temp, calc_p(), U, K, b_avg, calc_Rg());
+			fclose(output);
+		}
+
+		if (t % XYZ_FREQ == 0) {
+			// Write coordinates to .xyz file for viewing.
+			write_xyz("trajectory.xyz", 1);
 		}
 	}
 
 	// Simulation complete.
-
 	// Cosmetic stuff.
 	printf("\n");
 
@@ -142,7 +160,6 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-//
 // Here we calculate the harmonic force between all adjacent monomers, and then calculate
 // the three DPD forces for all particles that are within a distance r_{c}.
 //
@@ -162,8 +179,9 @@ void calc_forces (void) {
 	memset(fz, 0.0, n_dpd*sizeof(double));
 
 	// Reset energy.
-	U = 0.0;
-	K = 0.0;
+	U     = 0.0;
+	K     = 0.0;
+	b_avg = 0.0;
 
 	// Apply the harmonic force between all adjacent monomers.
 	for (i=0; i<n_poly; i++) {
@@ -174,10 +192,13 @@ void calc_forces (void) {
 			idx_j = idx_i + 1;
 
 			// How far apart are the adjacent monomers?
-			dx = x[idx_i] - x[idx_j];
-			dy = y[idx_i] - y[idx_j];
-			dz = z[idx_i] - z[idx_j];
+			dx = rx[idx_i] - rx[idx_j];
+			dy = ry[idx_i] - ry[idx_j];
+			dz = rz[idx_i] - rz[idx_j];
 			dr = sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
+
+			// Track average bond length.
+			b_avg += dr;
 
 			// Harmonic potential has no cutoff, so regardless of
 			// the value of dr, we compute the force.
@@ -203,72 +224,78 @@ void calc_forces (void) {
 			fz[idx_j] -= f_comp;
 		}
 	}
+
+	b_avg /= (n_poly * (N - 1));
 	
 	// Now we process *all* particles in the system to compute the three
 	// DPD forces. Since all forces are pair-wise we really only need to
 	// examine 1/2 of the particles in the system. 
-	for(k=0; i<nz; i++) {
+	for(k=0; k<nz; k++) {
 		for(j=0; j<ny; j++) {
 			for(i=0; i<nx; i++) {
 				// Calculate this cell's index.
 				cell0 = i + j*nx + k*nx*ny;
+
+			        // Loop through the 14 cells we need to examine (13 neighbors + cell0)
+			  	for(l=0; l<14; l++) {
+					// Who is in this cell?
+					idx_i = cell_head[cell0];
+					
+					// Compute the index of the cell we're looking at.
+					ni = i + nix[l];
+					nj = j + niy[l];
+					nk = k + niz[l];	
+
+					// If we're on a boundary, we need to change our
+					// indices to account for the PBC.
+					x_trans = 0.0;
+					y_trans = 0.0;
+					z_trans = 0.0;
+					if (ni > nx-1) {
+						ni      = 0;
+				       		x_trans = -Lx;
+				 	} else if (ni < 0) {
+						ni      = nx-1;
+						x_trans = Lx;
+					}	
+
+					if (nj > ny-1) {
+						nj      = 0;
+				       		y_trans = -Ly;
+				 	} else if (nj < 0) {
+						nj      = ny-1;
+						y_trans = Ly;
+					}	
+
+					if (nk > nz-1) {
+						nk      = 0;
+				       		z_trans = -Lz;
+				 	} else if (nk < 0) {
+						nk      = nz-1;
+						z_trans = Lz;
+					}		
 	
-				// Who is in this cell?
-				idx_i = cell_head[cell0];
-				
-				// If the cell is not empty, proceed:
-				while (idx_i > -1) {
-					// Loop through the 14 cells we need to examine.
-					for(l=0; l<14; l++) {
-						// Compute the index of the cell we're looking at.
-						ni = i + nix[l];
-						nj = j + niy[l];
-						nk = k + niz[l];	
+					// Get the top of our neighboring cell.
+					cell1 = ni + nj*nx + nk*nx*ny;
 
-						// If we're on a boundary, we need to change our
-						// indices to account for the PBC.
-						if (ni > nx-1) {
-							ni      = 0;
-					       		x_trans = -Lx;
-					 	} else if (ni < 0) {
-							ni      = nx-1;
-							x_trans = Lx;
-						}	
+					// Loop through the contents of cell0 and process with
+					// all of cell1 until we reach the bottom!
+					idx_j = cell_head[cell1];
+					if (cell0 == cell1) idx_j = cell_list[idx_i];
 
-						if (nj > ny-1) {
-							nj      = 0;
-					       		y_trans = -Ly;
-					 	} else if (nj < 0) {
-							nj      = ny-1;
-							y_trans = Ly;
-						}	
-
-						if (nk > nz-1) {
-							nk      = 0;
-					       		z_trans = -Lz;
-					 	} else if (nk < 0) {
-							nk      = nz-1;
-							z_trans = Lz;
-						}		
-
-						cell1 = ni + nj*nx + nk*nx*ny;
-
-						// Get the top of our neighboring cell.
-						idx_j = cell_head[cell1];
-
-						// Process the entire cell until we reach the bottom!
+			        	while (idx_i > -1) {
 						while (idx_j > -1) {
 							dx = x[idx_i] - x[idx_j] + x_trans;
 							dy = y[idx_i] - y[idx_j] + y_trans;
 							dz = z[idx_i] - z[idx_j] + z_trans;
-
+	
 							dr = sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
-
+	
 							// If the particles are closer than dr = r_{c}, calculate
 							// the forces.
 							if (dr < 1.0) {
 								p_ij = p_type[idx_i]*p_type[idx_j];
-
+	
 								// Choose interaction strength for conservative force.
 								switch(p_ij) {
 									case 1:
@@ -277,40 +304,36 @@ void calc_forces (void) {
 									case -1:
 										a = a_ij;
 										break;
-									// We should never be here.
-									default:
-										a = 0.0;
-										break;
 								}
-				
+					
 								// Weighting terms for (r)andom and (d)isspative forces.
 								wr = 1.0/dr - 1.0;
 								wd = pow(wr, 2);
 							
 								// Random number for random force, zero mean, unit variance.
 								theta_ij = 2.0*ran3(&iseed) - 1.0;
-
+	
 								// Inner product between r_ij and  v_ij.
 								r_dot_v = dx*(vx[idx_i] - vx[idx_j]) + dy*(vy[idx_i] - vy[idx_j]) + dz*(vz[idx_i] - vz[idx_j]);
 								// Add to our potential energy:
 								U += 0.5*a*pow((1.0-dr), 2);
-
+	
 								// Compute our forces.
 								fC = a * wr;
 								fR = sigma * wr * theta_ij;
 								fD = -gamma1 * wd * r_dot_v;
-
+	
 								f_net = fC + fR + fD;
-
+	
 								// Compute the components.
 								f_comp = f_net * dx;
 								fx[idx_i] += f_comp;
 								fx[idx_j] -= f_comp;
-
+	
 								f_comp = f_net * dy;
 								fy[idx_i] += f_comp;
 								fy[idx_j] -= f_comp;
-
+	
 								f_comp = f_net * dz;
 								fz[idx_i] += f_comp;
 								fz[idx_j] -= f_comp;
@@ -318,9 +341,11 @@ void calc_forces (void) {
 							// Get next particle in the cell.
 							idx_j = cell_list[idx_j];
 						} // end while (idx_j > -1)
-					} // end for l = [0, 14);		
-					idx_i = cell_list[idx_i];
-				} // end while (idx_i > -1)
+						idx_j = cell_head[cell1];
+						idx_i = cell_list[idx_i]; 
+						if (cell0 == cell1) idx_j = cell_list[idx_i];
+				    	} // end while (idx_i > -1)
+				} // end for l = [0, 14);		
 			} // end for i
 		} // end for j
 	} // end for k
@@ -368,9 +393,9 @@ double calc_Rg(void) {
 			idx_i = i*N + j;
 			for (k=j+1; k<N; k++) {
 				idx_j = i*N + k;
-				dx    = x[idx_i] - x[idx_j];
-				dy    = y[idx_i] - y[idx_j];
-				dz    = z[idx_i] - z[idx_j];
+				dx    = rx[idx_i] - rx[idx_j];
+				dy    = ry[idx_i] - ry[idx_j];
+				dz    = rz[idx_i] - rz[idx_j];
 				dr2   = pow(dx,2) + pow(dy,2) + pow(dz,2);
 
 				Rg += dr2;
@@ -393,14 +418,22 @@ double calc_Rg(void) {
 // the degrees of freedom in the system (3 * number of particles - 3).
 //
 double calc_T(void) {
-	int deg_freedm;
+	int i, deg_freedm;
+	double kBT = 0;
 
 	deg_freedm = 3 * n_dpd - 3;
-	T = 2.0 * K / deg_freedm;
-	return T;
+
+	// This is the explicit calculation.
+	for (i=0; i<n_dpd; i++) {
+		kBT += pow(vx[i],2) + pow(vy[i],2) + pow(vz[i],2);
+	}
+	kBT /= deg_freedm;
+
+	// This is how you'd calculate it directly from the kinetic energy.
+	// kBT = 2.0 * K / deg_freedm;
+	return kBT;
 }
 
-//
 // Here, we create the random initial condition for the simulation. Polymers and solvent
 // particles are placed randomly into the system along with random velocities. The average
 // velocity is subtracted from all particles to eliminate any net drift that may be present.
@@ -527,6 +560,11 @@ void initialize_system(void) {
 		k++;
 	}
 
+	// Copy the coordinates to our non-PBC arrays.
+	memcpy(rx, x, n_dpd*sizeof(double));
+	memcpy(ry, y, n_dpd*sizeof(double));
+	memcpy(rz, z, n_dpd*sizeof(double));
+
 	// Subtract the average velocity from  *all* particles to eliminate 
         // any drift that may be present.
 	vxt /= (double) n_dpd;
@@ -550,7 +588,6 @@ void initialize_system(void) {
 	return;
 }
 
-//
 // Here we apply the periodic boundary condition (PBC) and place all particles
 // in the system into our linked list so that we can quickly determine all interacting
 // particle pairs within a distance of r_{c}.
@@ -594,7 +631,6 @@ void make_list(void) {
 	return;
 }
 
-//
 // Here we read in the parameters for our simulation from the config file we specify in filename.
 //
 void read_parameters(char *filename) {
@@ -659,10 +695,13 @@ void read_parameters(char *filename) {
 	// Define gamma from sigma, since they are related through the
 	// fluctuation-dissipation theorem:
 	gamma1 = pow(sigma, 2.0) / (2.0 * T);
-	sigma  = sigma * sqrt(3.0 / T);
+	sigma  = sigma * sqrt(3.0 / dt);
 	return;
 }
 
+// Below is the implementation of the velocity-Verlet
+// algorithm as detailed in Groot & Warren.
+//
 void velocity_verlet(double lambda) {
 	int i;
 	double dt2 = pow(dt,2);
@@ -704,7 +743,6 @@ void velocity_verlet(double lambda) {
 	calc_forces();
 
 	// Correct velocities and calculate kinetic energy
-	K = 0.0;
 	for (i=0; i<n_dpd; i++) {
 		vx[i] = vxp[i] + 0.5*dt*(fx[i]+fxp[i]);
 		vy[i] = vyp[i] + 0.5*dt*(fy[i]+fyp[i]);
@@ -719,12 +757,16 @@ void velocity_verlet(double lambda) {
 // Finally, here's where we write the polymer coordinates (only!) to disk in 
 // .xyz format so that VMD, Ovito, etc. can read them to render our snapshot.
 //
-void write_xyz (char* filename) {
+void write_xyz (char* filename, int append) {
 	FILE *output;
 	int i;
 
 	printf("\nWriting coordinates to %s\n\n", filename);
-	output = fopen(filename, "w");
+	if (append) {
+		output = fopen(filename, "aw");
+	} else {
+		output = fopen(filename, "w");
+	}
 
 	fprintf(output, "%d\n", n_poly*N);
 	fprintf(output, "# Snapshot from time t = %d\n", t);
