@@ -4,7 +4,7 @@ This code is the result of a series of YouTube videos aimed at briefly introduci
 
 The YouTube miniseries can be viewed at: http://www.youtube.com/xxxxxxx.
 
-This source is laid out to mirror the progress that is made in each video. Briefly:
+This source is laid out to mirror the progress that is made in each video. The final, full code is contained in the Final_Code/ subdirectory of this repository. I've made every attempt to make the code as readable as possible with ample comments.
 
 ## Video 1:
 
