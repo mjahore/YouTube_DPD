@@ -1,14 +1,16 @@
-/***********************************************************
+/***********************************************************************************
  *
  * dpd.c - Example DPD simulation of a polymer in solution
  *         from YouTube video series available at:
- *         https://www.youtube.com/
+ *         https://www.youtube.com/playlist?list=PLx9F_EFL1lVaAqnF-k091LjhjGvC0pLOq
  *
  * Author: Michael J. A. Hore (hore@case.edu)
  *
+ * Repository: https://www.github.com/mjahore/YouTube_DPD
+ *
  * License: This code is licensed under GPL v3. Please see
  *          LICENSE for more details.
- ***********************************************************/
+ ***********************************************************************************/
  
 #include <stdio.h>
 #include <stdlib.h>
