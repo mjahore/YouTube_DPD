@@ -497,9 +497,9 @@ void initialize_system(void) {
 		// azimuthal and polar angles).
 		theta = ran3(&iseed) * PI;
 		phi   = ran3(&iseed) * 2.0 * PI;
-		vx[k] = sqrt(T) * cos(phi) * sin(theta);
-		vy[k] = sqrt(T) * sin(phi) * sin(theta);
-		vz[k] = sqrt(T) * cos(theta);
+		vx[k] = sqrt(3.0*T) * cos(phi) * sin(theta);
+		vy[k] = sqrt(3.0*T) * sin(phi) * sin(theta);
+		vz[k] = sqrt(3.0*T) * cos(theta);
 		vxt  += vx[k];
 		vyt  += vy[k];
 		vzt  += vz[k];
@@ -519,16 +519,16 @@ void initialize_system(void) {
 			// The position of this monomer should be the position
 			// of the previous monomer + the bond length, oriented
 			// in a random direction.
-			x[k]  = x[k-1] + sqrt(b) * cos(phi) * sin(theta);
-			y[k]  = y[k-1] + sqrt(b) * sin(phi) * sin(theta);
-			z[k]  = z[k-1] + sqrt(b) * cos(theta);
+			x[k]  = x[k-1] + b * cos(phi) * sin(theta);
+			y[k]  = y[k-1] + b * sin(phi) * sin(theta);
+			z[k]  = z[k-1] + b * cos(theta);
 
 			// Same principles for the velocity here:
 			theta = ran3(&iseed) * PI;
 			phi   = ran3(&iseed) * 2.0 * PI;
-			vx[k] = sqrt(T) * cos(phi) * sin(theta);
-			vy[k] = sqrt(T) * sin(phi) * sin(theta);
-			vz[k] = sqrt(T) * cos(theta);
+			vx[k] = sqrt(3.0*T) * cos(phi) * sin(theta);
+			vy[k] = sqrt(3.0*T) * sin(phi) * sin(theta);
+			vz[k] = sqrt(3.0*T) * cos(theta);
 			vxt  += vx[k];
 			vyt  += vy[k];
 			vzt  += vz[k];
@@ -550,9 +550,9 @@ void initialize_system(void) {
 		// Random velocity at T.
 		theta = ran3(&iseed) * PI;
 		phi   = ran3(&iseed) * 2.0 * PI;
-		vx[k] = sqrt(T) * cos(phi) * sin(theta);
-		vy[k] = sqrt(T) * sin(phi) * sin(theta);
-		vz[k] = sqrt(T) * cos(theta);
+		vx[k] = sqrt(3.0*T) * cos(phi) * sin(theta);
+		vy[k] = sqrt(3.0*T) * sin(phi) * sin(theta);
+		vz[k] = sqrt(3.0*T) * cos(theta);
 		vxt  += vx[k];
 		vyt  += vy[k];
 		vzt  += vz[k];
