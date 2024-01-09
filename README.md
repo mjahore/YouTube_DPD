@@ -12,6 +12,8 @@ In this video, I introduce the necessary fundamentals of DPD for writing a simul
 
 ## Video 2:
 
+In this video, I correct 3 minor mistakes from video 1, and discuss the use of a cell list to make the processing of our forces more efficient. In the code, I implement the cell list, harmonic force, and calculate the root mean-squared radius of gyration.
+
 ## Video 3:
 
 ## Video 4:
