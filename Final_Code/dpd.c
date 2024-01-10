@@ -60,14 +60,14 @@ int iseed;             // Random seed
 #define XYZ_FREQ  100
 
 // Function prototypes:
-void   calc_forces(void);
+void   calc_forces(int prod);
 double calc_Rg(void);
 double calc_p(void);
 double calc_T(void);
 void   initialize_system(void);
 void   make_list(void);
 void   read_parameters(char *filename);
-void   velocity_verlet(double lambda);
+void   velocity_verlet(int prod, double lambda);
 void   write_xyz(char *filename, int append);
 
 int main(int argc, char *argv[]) {
@@ -95,14 +95,14 @@ int main(int argc, char *argv[]) {
 	// Calculate the initial forces before entering the main loop
 	// of the simulation.
 	make_list();
-	calc_forces();
+	calc_forces(0);
 
 	// Equilibrate the system.
 	output = fopen("dpd_data.dat", "w");
 	fprintf(output, "# timestep\t kBT\t p\t U\t K\t b_avg\t Rg\n");
 	fclose(output);
 	for(t=0; t<time_equil; t++) {
-		velocity_verlet(0.5);
+		velocity_verlet(0,0.5);
 
 		// Output to disk at regular intervals.
 		if (t % CALC_FREQ == 0) {
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
 
 	// Run production steps.
 	for(t=time_equil; t<(time_equil+time_prod); t++) {
-		velocity_verlet(0.5);
+		velocity_verlet(1,0.5);
 
 		// Output to disk at regular intervals.
 		if (t % CALC_FREQ == 0) {
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 // Here we calculate the harmonic force between all adjacent monomers, and then calculate
 // the three DPD forces for all particles that are within a distance r_{c}.
 //
-void calc_forces (void) {
+void calc_forces (int prod) {
 	int i, j, k, l, idx_i, idx_j;
 	int ni, nj, nk;
 	int cell0, cell1;
@@ -296,13 +296,17 @@ void calc_forces (void) {
 							// If the particles are closer than dr = r_{c}, calculate
 							// the forces.
 							if (dr < 1.0) {
-								p_ij = p_type[idx_i]*p_type[idx_j];
+								p_ij = p_type[idx_i]*p_type[idx_j]*prod;
 	
 								// Choose interaction strength for conservative force.
 								switch(p_ij) {
+									// 0 = equilibration
+									case 0:
+									// 1 = same particle type
 									case 1:
 										a = a_ii;
 										break;
+									// -1 = different particle type
 									case -1:
 										a = a_ij;
 										break;
@@ -705,7 +709,7 @@ void read_parameters(char *filename) {
 // Below is the implementation of the velocity-Verlet
 // algorithm as detailed in Groot & Warren.
 //
-void velocity_verlet(double lambda) {
+void velocity_verlet(int prod, double lambda) {
 	int i;
 	double dt2 = pow(dt,2);
 
@@ -743,7 +747,7 @@ void velocity_verlet(double lambda) {
 
 	// Now we calculate the forces again:
 	make_list();
-	calc_forces();
+	calc_forces(prod);
 
 	// Correct velocities and calculate kinetic energy
 	for (i=0; i<n_dpd; i++) {
