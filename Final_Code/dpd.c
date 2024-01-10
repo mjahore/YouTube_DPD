@@ -56,8 +56,8 @@ int iseed;             // Random seed
 #include "cell_list.h" // Cell list for finding interacting pairs
 
 #define PI 3.1415926535897932384626433832795f
-#define CALC_FREQ 10
-#define XYZ_FREQ  100
+#define CALC_FREQ 100
+#define OUT_FREQ  1000
 
 // Function prototypes:
 void   calc_forces(int prod);
@@ -71,8 +71,8 @@ void   velocity_verlet(int prod, double lambda);
 void   write_xyz(char *filename, int append);
 
 int main(int argc, char *argv[]) {
-	FILE *output;
-	double kBT_temp;
+	FILE *data_output;
+	double T_calc, p_calc, Rg_rms;
 
 	// Cosmetic stuff.
 	printf("\n");
@@ -98,19 +98,35 @@ int main(int argc, char *argv[]) {
 	calc_forces(0);
 
 	// Equilibrate the system.
-	output = fopen("dpd_data.dat", "w");
-	fprintf(output, "# timestep\t kBT\t p\t U\t K\t b_avg\t Rg\n");
-	fclose(output);
 	for(t=0; t<time_equil; t++) {
 		velocity_verlet(0,0.5);
 
 		// Output to disk at regular intervals.
 		if (t % CALC_FREQ == 0) {
-			kBT_temp = calc_T();
-			printf("(%d) kBT = %1.5lf\t p = %lf\t U = %1.5lf\t K = %1.5lf\t Rg: %1.5lf\n", t, kBT_temp, calc_p(), U, K, calc_Rg()); 
-			output = fopen("dpd_data.dat", "aw");
-			fprintf(output, "%d   %lf   %lf   %lf   %lf   %lf   %lf\n", t, kBT_temp, calc_p(), U, K, b_avg, calc_Rg());
-			fclose(output);
+			Rg_rms = calc_Rg();
+			T_calc = calc_T();
+			p_calc = calc_p();
+
+			printf("(%d)\t kBT: %2.5lf   |p|: %2.5lf    <Rg^2>^(1/2): %2.5lf\n", t, T_calc, p_calc, Rg_rms);
+
+			// Output temperature to disk.
+			data_output = fopen("temperature.dat", "aw");
+			fprintf(data_output, "%d\t%lf\n", t, T_calc);
+			fclose(data_output);
+
+			// Output momentum to disk.
+			data_output = fopen("momentum.dat", "aw");
+			fprintf(data_output, "%d\t%lf\n", t, p_calc);
+			fclose(data_output);
+
+			// Output Rg to disk.
+			data_output = fopen("radius_gyration.dat", "aw");
+			fprintf(data_output, "%d\t%lf\t%lf\n", t, Rg_rms, b_avg);
+			fclose(data_output);
+		}
+
+		if (t % OUT_FREQ == 0) {
+			write_xyz("trajectory.xyz", 1);
 		}
 	}
 
@@ -120,15 +136,29 @@ int main(int argc, char *argv[]) {
 
 		// Output to disk at regular intervals.
 		if (t % CALC_FREQ == 0) {
-			kBT_temp = calc_T();
-			printf("(%d) kBT = %1.5lf\t p = %lf\t U = %1.5lf\t K = %1.5lf\t Rg: %1.5lf\n", t, kBT_temp, calc_p(), U, K, calc_Rg()); 
-			output = fopen("dpd_data.dat", "aw");
-			fprintf(output, "%d   %lf   %lf   %lf   %lf   %lf   %lf\n", t, kBT_temp, calc_p(), U, K, b_avg, calc_Rg());
-			fclose(output);
+			Rg_rms = calc_Rg();
+			T_calc = calc_T();
+			p_calc = calc_p();
+
+			printf("(%d)\t kBT: %2.5lf   |p|: %2.5lf    <Rg^2>^(1/2): %2.5lf\n", t, T_calc, p_calc, Rg_rms);
+
+			// Output temperature to disk.
+			data_output = fopen("temperature.dat", "aw");
+			fprintf(data_output, "%d\t%lf\n", t, T_calc);
+			fclose(data_output);
+
+			// Output momentum to disk.
+			data_output = fopen("momentum.dat", "aw");
+			fprintf(data_output, "%d\t%lf\n", t, p_calc);
+			fclose(data_output);
+
+			// Output Rg to disk.
+			data_output = fopen("radius_gyration.dat", "aw");
+			fprintf(data_output, "%d\t%lf\t%lf\n", t, Rg_rms, b_avg);
+			fclose(data_output);
 		}
 
-		if (t % XYZ_FREQ == 0) {
-			// Write coordinates to .xyz file for viewing.
+		if (t % OUT_FREQ == 0) {
 			write_xyz("trajectory.xyz", 1);
 		}
 	}
