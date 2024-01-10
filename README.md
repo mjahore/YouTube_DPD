@@ -16,6 +16,6 @@ In this video, I correct 3 minor mistakes from video 1, and discuss the use of a
 
 ## Video 3:
 
-In this video, I implement the cell list to efficiently calculate the conservative, random, and dissipative forces between all particle pairs separated by a distance of r<sub>c<\sub> or less. I discuss the velocity-Verlet algorithm, and implement it along with two functions to calculate the average momentum and temperature in the system. I run a quick test and compare the output to values in the literature, showing that this code produces results that agree with published results with similar parameters but generated with PD<sup>2</sup>. PD<sup>2</sub> is a parallel implementation of DPD written in Fortran77 that utilizes MPI. It is open source and available at https://www.github.com/mjahore/PD2.
+In this video, I implement the cell list to efficiently calculate the conservative, random, and dissipative forces between all particle pairs separated by a distance of r<sub>c</sub> or less. I discuss the velocity-Verlet algorithm, and implement it along with two functions to calculate the average momentum and temperature in the system. I run a quick test and compare the output to values in the literature, showing that this code produces results that agree with published results with similar parameters but generated with PD<sup>2</sup>. PD<sup>2</sup> is a parallel implementation of DPD written in Fortran77 that utilizes MPI. It is open source and available at https://www.github.com/mjahore/PD2.
 
 ## Video 4:
