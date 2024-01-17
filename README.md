@@ -20,4 +20,4 @@ In this video, I implement the cell list to efficiently calculate the conservati
 
 ## Video 4:
 
-In this video, we compare simulations of 5% polymer solutions (N = 10, 20, 30, 50, and 100) to polymer melts with identical chain lengths to observe how R<sub>g</sub> scales with (N - 1). We observe excellent quantitative agreement between the DPD results and classical polymer physics theories. We also observe phase separation of a binary mixture of immiscible fluids.
+In this video, I compare simulations of 5% polymer solutions (N = 10, 20, 30, 50, and 100) to polymer melts with identical chain lengths to observe how R<sub>g</sub> scales with (N - 1). We observe excellent quantitative agreement between the DPD results and classical polymer physics theories. I also demonstrate that the code can simulate phase separation of a binary mixture of immiscible fluids.
