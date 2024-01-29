@@ -1,0 +1,7 @@
+# Architecture definition for linear homopolymer (N = 10)
+Linear Homopolymer
+10
+50.0
+0.7 0.0
+r -1 1 1
+b 0 9 1

@@ -1,0 +1,10 @@
+# Architecture definition for star homopolymer (f = 4, N_arm = 10)
+Star Polymer (f = 4)
+41
+50.0
+0.7 0.0
+r	-1	1	1
+b	0	10	1
+b	0	10	1
+b	0	10	1
+b	0	10	1
