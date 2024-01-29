@@ -4,7 +4,7 @@ This code is the result of a series of YouTube videos aimed at briefly introduci
 
 The YouTube miniseries can be viewed at: https://www.youtube.com/playlist?list=PLx9F_EFL1lVaAqnF-k091LjhjGvC0pLOq
 
-This source is laid out to mirror the progress that is made in each video. The final, full code is contained in the Final_Code/ subdirectory of this repository. I've made every attempt to make the code as readable as possible with ample comments.
+This source is laid out to mirror the progress that is made in each video. The final, full code is contained in the Final_Code/ subdirectory of this repository. I've made every attempt to make the code as readable as possible with ample comments. I also did a little bit of optimization on the code in Advanced_Code/ to make it a little bit more general purpose. 
 
 ## Video 1:
 
