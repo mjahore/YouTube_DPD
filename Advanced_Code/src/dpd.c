@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
 	// Cosmetic stuff.
 	printf("\n");
-	printf("gDPD by Michael J. A. Hore, Case Western Reserve University\n");
+	printf("dpd.c by Michael J. A. Hore, Case Western Reserve University\n");
 	printf("Copyright (c) 2024 Michael J. A. Hore <hore@case.edu>\n\n");
 	printf("Version: %s  (Compiled: %s)\n\n", VERSION, BUILD_INFO);
 	
