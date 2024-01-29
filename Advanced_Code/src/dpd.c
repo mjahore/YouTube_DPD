@@ -1028,7 +1028,7 @@ void write_xyz (int comp, char* filename, int append) {
 	int i, offset;
 	char p_char;
 
-	printf("\nWriting coordinates to %s\n\n", filename);
+	printf("\nWriting coordinates to %s\n", filename);
 	if (append) {
 		output = fopen(filename, "aw");
 	} else {
